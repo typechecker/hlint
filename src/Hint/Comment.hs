@@ -33,40 +33,43 @@ directives = words $
 
 
 commentHint :: ModuHint
-commentHint _ m = concatMap (chk singleLines singleSomeLines) comments
+commentHint _ m = concatMap (check singleLines someLines) comments
   where
     comments = ghcComments m
-
-    singleLines :: [Int]
     singleLines = sort $ commentLine <$> filter isSingle comments
+    someLines = sort $ commentLine <$> filter isSingleSome comments
 
-    singleSomeLines :: [Int]
-    singleSomeLines = sort $ commentLine <$> filter isSingleSome comments
-
+-- | Does the commment start with "--"? Can be empty. Excludes haddock single
+-- line comments, "-- |" and "-- ^".
 isSingle :: LEpaComment -> Bool
 isSingle comm@(L (anchor -> span) _) =
   isOneLineRealSpan span
   && not (isPointRealSpan span)
   && not (isCommentMultiline comm || isHaddock comm)
 
+-- | A single line comment about something where something is:
+-- * Not a haddock comment "-- |" or "-- ^"
+-- * Not a multi-line comment "{- ... -}"
+-- * Not a whitespace comment "--       "
 isSingleSome :: LEpaComment -> Bool
 isSingleSome comm@(L (anchor -> span) _) =
   isOneLineRealSpan span
   && not (isPointRealSpan span)
   && not (isCommentMultiline comm || isHaddock comm || isCommentWhitespace comm)
 
+-- | The start line number of a comment.
 commentLine :: LEpaComment -> Int
 commentLine (L (anchor -> span) _) = srcLocLine $ realSrcSpanStart span
 
+-- | Is the next line in a string of empty comments leading up to a non-emtpy
+-- comment?
 nextLineIsComment :: Int -> [Int] -> [Int] -> Bool
-nextLineIsComment x singles somes =
-  x + 1 `elem` singles
-  && (Just True == do
-    next <- find (x <) somes
-    pure $ [x + 1 .. next] `isInfixOf` singles)
+nextLineIsComment x singles somes = Just True == do
+  next <- find (x <) somes
+  pure $ [x + 1 .. next] `isInfixOf` singles
 
-chk :: [Int] -> [Int] -> LEpaComment -> [Idea]
-chk singles somes comm@(L{})
+check :: [Int] -> [Int] -> LEpaComment -> [Idea]
+check singles somes comm@(L{})
   | isHaddockWhitespace comm =
       if | isMultiline -> [emptyHaddockMulti comm]
          | nextLineIsComment (commentLine comm) singles somes -> []
@@ -82,7 +85,7 @@ chk singles somes comm@(L{})
       isMultiline = isCommentMultiline comm
       s = commentText comm
       name = takeWhile (\x -> isAlphaNum x || x == '_') $ trimStart s
-chk _ _ _ = []
+check _ _ _ = []
 
 isHaddockWhitespace :: LEpaComment -> Bool
 isHaddockWhitespace comm = isHaddock comm && isStringWhitespace (drop 2 $ commentText comm)
@@ -91,7 +94,7 @@ isHaddock :: LEpaComment -> Bool
 isHaddock (take 2 . commentText -> s) = " |" == s || " ^" == s
 
 isStringWhitespace :: String -> Bool
-isStringWhitespace = not . any (`notElem` " \r\n")
+isStringWhitespace = not . any (`notElem` " \t\r\n")
 
 isCommentWhitespace :: LEpaComment -> Bool
 isCommentWhitespace comm@(L (anchor -> span) _ ) =
