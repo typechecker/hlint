@@ -2,6 +2,6 @@
 --
 haddockAboveSingles = 1
 
--- |
--- >>>
-haddockAboveDoctest = 1
+haddockBelowSingles = 1
+-- ^
+--

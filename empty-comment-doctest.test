@@ -1,0 +1,7 @@
+-- |
+-- >>>
+doctestAboveSingle = 1
+
+haddockBelowSingle = 1
+-- ^
+-- >>>
