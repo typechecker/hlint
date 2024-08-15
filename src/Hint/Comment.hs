@@ -130,7 +130,7 @@ commentHint _ m =
   pragmaIdeas
   ++ blockHaddockIdeas
   ++ blockIdeas
-  -- ++ runHaddockIdeas
+  ++ runHaddockIdeas
   ++ ideas
   where
     -- Comments need to be sorted by line number for detecting runs of single
@@ -147,18 +147,14 @@ commentHint _ m =
     pragmaIdeas = concatMap checkEmptyPragma pragmas
     blockHaddockIdeas = concatMap checkEmptyBlockHaddock blockHaddocks
     blockIdeas = concatMap checkEmptyBlock blocks
-    -- runHaddockIdeas = concatMap (\x -> traceShow ("YYYY", x) checkEmptyRunHaddock x) runHaddocks
-    -- runHaddockIdeas = concatMap (\cs@(c : _) -> let s = commentText <$> cs in
-    --   traceShow ("ZZZZ", s) checkEmptyRunHaddock s c) runHaddocks
-    runHaddockIdeas = case runHaddocks of
-      [xs@(x : _), ys@(y : _)] ->
-        -- (let s = commentText <$> xs in traceShow ("XXXX", s, x) checkEmptyRunHaddock s x)
-        -- ++
-        (let s = commentText <$> ys in traceShow ("YYYY", s, y) checkEmptyRunHaddock s y)
-      _ -> []
+    runHaddockIdeas =
+      concatMap
+        (\cs@(c : _) -> let s = commentText <$> cs in checkEmptyRunHaddock s c)
+        runHaddocks
+
     runIdeas = [] -- concatMap checkEmptyRun runs
 
-    runReplacements = runHaddockIdeas ++ runIdeas
+    runReplacements = runIdeas
 
     ideas = if not (null runReplacements)
       then runReplacements
