@@ -2,6 +2,9 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 
+{-# OPTIONS_GHC -Wno-unused-top-binds #-}
+{-# OPTIONS_GHC -Wno-x-partial #-}
+
 {-
 <TEST>
 {- MISSING HASH #-} -- {-# MISSING HASH #-}
@@ -19,8 +22,8 @@
 
 module Hint.Comment(commentHint) where
 
-import Debug.Trace
-import Data.Maybe (fromMaybe)
+-- import Debug.Trace
+import Data.Char (isAlphaNum)
 
 import Hint.Type
 import Data.List.Extra
@@ -59,7 +62,7 @@ classifyComments xs = Comments pragmas blockHaddocks blocks runHaddocks runs lin
 
 commentRuns :: [LEpaComment] -> [[LEpaComment]]
 commentRuns comments =
-    traceShow (map (map commentText) xs)
+    -- traceShow (map (map commentText) xs)
     xs
   where
     xs =
@@ -69,11 +72,11 @@ commentRuns comments =
             [] -> [[y]]
             head@(((L (anchor -> spanX) _)) : _) : tails ->
               let startX = srcSpanStartLine spanX
-                  startY = srcSpanStartLine spanY
-                  endX = srcSpanEndLine spanX
+                  -- startY = srcSpanStartLine spanY
+                  -- endX = srcSpanEndLine spanX
                   endY = srcSpanEndLine spanY
               in
-                traceShow ((startY, endY), (startX, endX)) $
+                -- traceShow ((startY, endY), (startX, endX)) $
                 if endY + 1 == startX then (y : head) : tails else [y] : xs
             )
         []
@@ -84,34 +87,36 @@ isHaddockLeader h = h == " |" || h == " ^"
 
 dropBlankLinesHint :: [LEpaComment] -> [Idea]
 dropBlankLinesHint comments =
-  traceShow xs $
-  traceShow ys $
-  traceShow ys' $
-  trace content $
-  trace content'' $
-  replaceComment "Drop blank lines" (head comments) : map (emptyComment (\s -> "{-" ++ s ++ "-}") "Drop blank lines") (tail comments)
-  where
-    xs = commentText <$> comments
-    content = unlines $ ("- --" ++) <$> xs
+  -- traceShow xs $
+  -- traceShow ys $
+  -- traceShow ys' $
+  -- trace content $
+  -- trace content'' $
+  _replaceComment "Drop blank lines" (head comments) : map (emptyComment (\s -> "{-" ++ s ++ "-}") "Drop blank lines") (tail comments)
+  -- where
+    -- xs = commentText <$> comments
+    -- content = unlines $ ("- --" ++) <$> xs
 
-    ys = (\l ->
-      [ traceShow ("x", "y", (x, y)) x
-      | (x,y) <- zip l (tail l)
-      , x /= y || x /= ""
-      ]) (xs ++ [""])
+    -- ys = (\l ->
+    --   [
+    --     traceShow ("x", "y", (x, y))
+    --     x
+    --   | (x,y) <- zip l (tail l)
+    --   , x /= y || x /= ""
+    --   ]) (xs ++ [""])
 
     -- Get rid of leading empty lines with haddock comments.
     -- TODO: Add configuration on how to merge into haddock leader.
-    ys' = case ys of
+    -- ys' = case ys of
       -- Merge first non-empty line with haddock leader.
-      h : "" : y : ys | isHaddockLeader h -> (h ++ y) : ys
+      -- h : "" : y : ys | isHaddockLeader h -> (h ++ y) : ys
 
       -- Place first non-empty line one line after haddock leader.
-      h : "" : ys | isHaddockLeader h -> h : ys
+      -- h : "" : ys | isHaddockLeader h -> h : ys
 
-      _ -> ys
+      -- _ -> ys
 
-    content'' = unlines $ ("+ --" ++) <$> ys'
+    --content'' = unlines $ ("+ --" ++) <$> ys'
 
 commentHint :: ModuHint
 commentHint _ m =
@@ -120,13 +125,13 @@ commentHint _ m =
   -- b) runs of single-line comments
   -- c) single-line comments
   -- TODO: Remove (True, _) runs and then run the other checks on the rest.
-  traceShow ("pragmas", commentText <$> pragmas) $
-  traceShow ("blockHaddocks", commentText <$> blockHaddocks) $
-  traceShow ("blocks", commentText <$> blocks) $
-  traceShow ("runHaddocks", fmap commentText <$> runHaddocks) $
-  traceShow ("runs", fmap commentText <$> runs) $
-  traceShow ("lineHaddocks", commentText <$> lineHaddocks) $
-  traceShow ("lines", commentText <$> lines) $
+  -- traceShow ("pragmas", commentText <$> pragmas) $
+  -- traceShow ("blockHaddocks", commentText <$> blockHaddocks) $
+  -- traceShow ("blocks", commentText <$> blocks) $
+  -- traceShow ("runHaddocks", fmap commentText <$> runHaddocks) $
+  -- traceShow ("runs", fmap commentText <$> runs) $
+  -- traceShow ("lineHaddocks", commentText <$> lineHaddocks) $
+  -- traceShow ("lines", commentText <$> lines) $
   pragmaIdeas
   ++ blockHaddockIdeas
   ++ blockIdeas
@@ -142,7 +147,7 @@ commentHint _ m =
     singleLines = sort $ commentLine <$> filter isSingle comments
     someLines = sort $ commentLine <$> filter isSingleSome comments
 
-    Comments pragmas blockHaddocks blocks runHaddocks runs lineHaddocks lines = classifyComments comments
+    Comments pragmas blockHaddocks blocks runHaddocks _runs _lineHaddocks _lines = classifyComments comments
 
     pragmaIdeas = concatMap checkEmptyPragma pragmas
     blockHaddockIdeas = concatMap checkEmptyBlockHaddock blockHaddocks
@@ -152,7 +157,7 @@ commentHint _ m =
         (\cs@(c : _) -> let s = commentText <$> cs in checkEmptyRunHaddock s c)
         runHaddocks
 
-    runIdeas = [] -- concatMap checkEmptyRun runs
+    runIdeas = [] -- concatMap _checkEmptyRun runs
 
     runReplacements = runIdeas
 
@@ -161,14 +166,27 @@ commentHint _ m =
       else concatMap (check singleLines someLines) comments
 
 checkEmptyRunHaddock :: [String] -> LEpaComment -> [Idea]
-checkEmptyRunHaddock cs c@(L pos _) = trace "CHECK-EMPTY-RUN-HADDOCK" $
+checkEmptyRunHaddock cs c@(L pos _) =
+  -- trace "CHECK-EMPTY-RUN-HADDOCK" $
   let s = unlines cs
       s' = unlines ["--" ++ t | t <- lines s]
       msg = s' -- "QQQ: at " ++ show pos ++ " with content: " ++ s'
   in
-    traceShow ("run", s, s', commentText c, pos) $
-    if | isHaddockStringWhitespace s -> [emptyComment (const msg) ("Empty haddock run: " ++ show pos) c]
-       | isHaddockDoctestWhitespace cs -> [emptyComment (const msg) ("Empty doctest run: " ++ show pos) c]
+    -- traceShow ("run", s, s', commentText c, pos) $
+    if | isHaddockStringWhitespace s ->
+        [ emptyComment
+          (const msg)
+          -- ("Empty haddock run: " ++ show pos)
+          "Empty haddock run"
+          c
+        ]
+       | isHaddockDoctestWhitespace cs ->
+        [ emptyComment
+          (const msg)
+          -- ("Empty doctest run: " ++ show pos)
+          "Empty doctest run"
+          c
+        ]
        | otherwise -> []
 
 -- checkEmptyRunHaddock :: [String] -> LEpaComment -> [Idea]
@@ -208,18 +226,20 @@ doubleEmpty singles somes = let empties = somes \\ singles in
 -- | Do we have trailing empty single comment lines?
 trailingEmpty :: [Int] -> [Int] -> Bool
 trailingEmpty singles somes =
-  traceShow ("trailing", singles, somes) $
+  -- traceShow ("trailing", singles, somes) $
   leadingEmpty (reverse singles) (reverse somes)
 
 -- | Do we have leading empty single comment lines?
 leadingEmpty :: [Int] -> [Int] -> Bool
 leadingEmpty singles somes =
   let empties = singles \\ somes in
-  traceShow ("leading", empties, singles, somes) $
+  -- traceShow ("leading", empties, singles, somes) $
   case (empties, somes) of
       (_, []) -> True
       ([], _) -> False
-      (e : _, s : _) -> traceShow ("e vs s", e < s) $ e < s
+      (e : _, s : _) ->
+        -- traceShow ("e vs s", e < s) $
+        e < s
 
 data EmptyComment = EmptyHaddock | EmptyDoctest | EmptyComment deriving Eq
 
@@ -252,15 +272,16 @@ checkEmptyPragma comm = [emptyPragma comm | isPragmaWhitespace comm]
 --     s = unlines $ commentText <$> cs
 --     s' = unlines ["--" ++ t | t <- lines s]
 
-checkEmptyRun :: [LEpaComment] -> [Idea]
-checkEmptyRun = dropBlankLinesHint
+_checkEmptyRun :: [LEpaComment] -> [Idea]
+_checkEmptyRun = dropBlankLinesHint
 
 check :: [Int] -> [Int] -> LEpaComment -> [Idea]
 check singles somes comm@(L{})
   -- Multi-line haddock comments are handled elsewhere.
-  | isHaddockWhitespace comm && not (isCommentMultiline comm) = traceShow ("haddock", comm) $
+  | isHaddockWhitespace comm && not (isCommentMultiline comm) =
+      -- traceShow ("haddock", comm) $
       if | leadingEmptyHaddock ->
-            traceShow (line, singles, somes)
+            -- traceShow (line, singles, somes)
             -- [replaceComment "Try this" comm]
             -- [leadingEmptyIdea EmptyHaddock comm]
             []
@@ -268,26 +289,25 @@ check singles somes comm@(L{})
         --  | trailingEmpty singles somes -> [trailingEmptyIdea EmptyHaddock comm]
         --  | doubleEmpty singles somes -> [doubleEmptyIdea EmptyHaddock comm]
          | otherwise -> []
-  -- | isDoctestWhitespace comm =
-  --     if | leadingEmpty singles somes -> [leadingEmptyIdea EmptyDoctest comm]
-  --        | trailingEmpty singles somes -> [trailingEmptyIdea EmptyDoctest comm]
-  --        | doubleEmpty singles somes -> [doubleEmptyIdea EmptyDoctest comm]
-  --        | otherwise -> []
-  -- | isCommentWhitespace comm =
-  --     if | isMultiline -> [emptyCommentMulti comm]
-  --        | leadingEmpty singles somes -> [leadingEmptyIdea EmptyComment comm]
-  --        | trailingEmpty singles somes -> [trailingEmptyIdea EmptyComment comm]
-  --        | doubleEmpty singles somes -> [doubleEmptyIdea EmptyComment comm]
-  --        | otherwise -> []
-  -- | isMultiline, null (commentText comm) = [emptyCommentMulti comm]
-  -- | isMultiline, "#" `isSuffixOf` s && not ("#" `isPrefixOf` s) = [grab "Fix pragma markup" comm $ '#':s]
-  -- | isMultiline, name `elem` directives = [grab "Use pragma syntax" comm $ "# " ++ trim s ++ " #"]
+  | isDoctestWhitespace comm =
+      if | leadingEmpty singles somes -> [leadingEmptyIdea EmptyDoctest comm]
+         | trailingEmpty singles somes -> [trailingEmptyIdea EmptyDoctest comm]
+         | doubleEmpty singles somes -> [doubleEmptyIdea EmptyDoctest comm]
+         | otherwise -> []
+  | isCommentWhitespace comm =
+      if | isMultiline -> [emptyCommentMulti comm]
+         | leadingEmpty singles somes -> [leadingEmptyIdea EmptyComment comm]
+         | trailingEmpty singles somes -> [trailingEmptyIdea EmptyComment comm]
+         | doubleEmpty singles somes -> [doubleEmptyIdea EmptyComment comm]
+         | otherwise -> []
+  | isMultiline, null (commentText comm) = [emptyCommentMulti comm]
+  | isMultiline, "#" `isSuffixOf` s && not ("#" `isPrefixOf` s) = [grab "Fix pragma markup" comm $ '#':s]
+  | isMultiline, name `elem` directives = [grab "Use pragma syntax" comm $ "# " ++ trim s ++ " #"]
     where
       isMultiline = isCommentMultiline comm
       s = commentText comm
       leadingEmptyHaddock = commentFirstLine comm == Just EmptyHaddock
-      line = commentLine comm
-      -- name = takeWhile (\x -> isAlphaNum x || x == '_') $ trimStart s
+      name = takeWhile (\x -> isAlphaNum x || x == '_') $ trimStart s
 check _ _ _ = []
 
 isHaddock :: LEpaComment -> Bool
@@ -345,8 +365,8 @@ emptyHaddockMulti = emptyMultiIdea "haddock"
 refact :: SrcSpan -> String -> [Refactoring R.SrcSpan]
 refact loc s = [ModifyComment (toRefactSrcSpan loc) s]
 
-replaceComment :: String -> LEpaComment -> Idea
-replaceComment update o@(L pos _) =
+_replaceComment :: String -> LEpaComment -> Idea
+_replaceComment update o@(L pos _) =
   let s1 = commentText o
       loc = RealSrcSpan (anchor pos) GHC.Data.Strict.Nothing
   in
@@ -361,7 +381,8 @@ replaceComment update o@(L pos _) =
       --[ModifyComment (toRefactSrcSpan pos) "Do this"]
 
 emptyComment :: (String -> String) -> String -> LEpaComment -> Idea
-emptyComment f msg o@(L pos _) = traceShow ("EMPTY-COMMENT", show pos) $
+emptyComment f msg o@(L pos _) =
+  -- traceShow ("EMPTY-COMMENT", show pos) $
   let !s1 = commentText o
       !loc = RealSrcSpan (anchor pos) GHC.Data.Strict.Nothing
   in ideaRemove Suggestion msg loc (f s1) (refact loc "")
