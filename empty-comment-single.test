@@ -1,3 +1,9 @@
+--
+commentAboveSingle = 1
+
+commentBelowSingle = 1
+--
+
 -- |
 haddockAboveSingle = 1
 

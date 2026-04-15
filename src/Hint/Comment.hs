@@ -22,7 +22,7 @@
 
 module Hint.Comment(commentHint) where
 
--- import Debug.Trace
+import Debug.Trace
 import Data.Char (isAlphaNum)
 
 import Hint.Type
@@ -125,16 +125,17 @@ commentHint _ m =
   -- b) runs of single-line comments
   -- c) single-line comments
   -- TODO: Remove (True, _) runs and then run the other checks on the rest.
-  -- traceShow ("pragmas", commentText <$> pragmas) $
-  -- traceShow ("blockHaddocks", commentText <$> blockHaddocks) $
-  -- traceShow ("blocks", commentText <$> blocks) $
-  -- traceShow ("runHaddocks", fmap commentText <$> runHaddocks) $
-  -- traceShow ("runs", fmap commentText <$> runs) $
-  -- traceShow ("lineHaddocks", commentText <$> lineHaddocks) $
-  -- traceShow ("lines", commentText <$> lines) $
+  traceShow ("pragmas", commentText <$> pragmas) $
+  traceShow ("blockHaddocks", commentText <$> blockHaddocks) $
+  traceShow ("blocks", commentText <$> blocks) $
+  traceShow ("runHaddocks", fmap commentText <$> runHaddocks) $
+  traceShow ("runs", fmap commentText <$> runs) $
+  traceShow ("lineHaddocks", commentText <$> lineHaddocks) $
+  traceShow ("lines", commentText <$> lines) $
   pragmaIdeas
   ++ blockHaddockIdeas
   ++ blockIdeas
+  ++ lineHaddockIdeas
   ++ runHaddockIdeas
   ++ ideas
   where
@@ -147,15 +148,19 @@ commentHint _ m =
     singleLines = sort $ commentLine <$> filter isSingle comments
     someLines = sort $ commentLine <$> filter isSingleSome comments
 
-    Comments pragmas blockHaddocks blocks runHaddocks _runs _lineHaddocks _lines = classifyComments comments
+    Comments pragmas blockHaddocks blocks runHaddocks runs lineHaddocks lines = classifyComments comments
 
     pragmaIdeas = concatMap checkEmptyPragma pragmas
     blockHaddockIdeas = concatMap checkEmptyBlockHaddock blockHaddocks
     blockIdeas = concatMap checkEmptyBlock blocks
+
     runHaddockIdeas =
       concatMap
         (\cs@(c : _) -> let s = commentText <$> cs in checkEmptyRunHaddock s c)
         runHaddocks
+
+    lineHaddockIdeas =
+      concatMap (\c -> let s = commentText c in checkEmptyRunHaddock [s] c) lineHaddocks
 
     runIdeas = [] -- concatMap _checkEmptyRun runs
 
@@ -233,7 +238,7 @@ trailingEmpty singles somes =
 leadingEmpty :: [Int] -> [Int] -> Bool
 leadingEmpty singles somes =
   let empties = singles \\ somes in
-  -- traceShow ("leading", empties, singles, somes) $
+  traceShow ("leading", empties, singles, somes) $
   case (empties, somes) of
       (_, []) -> True
       ([], _) -> False
